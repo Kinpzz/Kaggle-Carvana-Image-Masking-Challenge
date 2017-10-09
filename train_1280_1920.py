@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 import os
 import random
 
-gpu_id = '0'
+gpu_id = '1'
 os.environ['CUDA_VISIBLE_DEVICES']=str(gpu_id)
 
 import params
@@ -17,8 +17,8 @@ orig_width = params.orig_width
 orig_height = params.orig_height
 
 epochs = params.max_epochs
-batch_size = params.batch_size
-model = params.model_factory()
+batch_size = 1
+model = params.model_factory_1280()
 
 #df_train = pd.read_csv(DATA_PATH + 'train_masks.csv')
 #ids_train = df_train['img'].map(lambda s: s.split('.')[0])
@@ -106,18 +106,10 @@ def train_generator():
             end = min(start + batch_size, len(ids_train_split))
             ids_train_batch = ids_train_split[start:end]
             for id in ids_train_batch:
-                #rand_height = random.randint(0, orig_height - input_size - 1)
-                #rand_height = 0
-                #rand_width = random.randint(0, orig_width - input_size - 1)
-                
                 img = cv2.imread((DATA_PATH + 'train/{}.jpg').format(id))
-                #img = img[rand_height:rand_height+input_size, rand_width:rand_width+input_size]
-                img = cv2.resize(img, (input_size, input_size))
-
+                img = cv2.copyMakeBorder(img, top=0, bottom=0, left=0, right=2, borderType= cv2.BORDER_REPLICATE)
                 mask = cv2.imread((DATA_PATH + 'gt/{}_mask.png').format(id), cv2.IMREAD_GRAYSCALE)
-                mask = cv2.resize(mask, (input_size, input_size))
-                #mask = mask[rand_height:rand_height+input_size, rand_width:rand_width+input_size]
-
+                mask = cv2.copyMakeBorder(mask, top=0, bottom=0, left=0, right=2, borderType= cv2.BORDER_REPLICATE)
                 img = randomHueSaturationValue(img,
                                                hue_shift_limit=(-50, 50),
                                                sat_shift_limit=(-5, 5),
@@ -143,14 +135,10 @@ def valid_generator():
             end = min(start + batch_size, len(ids_valid_split))
             ids_valid_batch = ids_valid_split[start:end]
             for id in ids_valid_batch:
-                #rand_height = random.randint(0, orig_height - input_size - 1)
-                #rand_width = random.randint(0, orig_width - input_size - 1)
                 img = cv2.imread((DATA_PATH + 'train/{}.jpg').format(id))
-                img = cv2.resize(img, (input_size, input_size))
+                img = cv2.copyMakeBorder(img, top=0, bottom=0, left=0, right=2, borderType= cv2.BORDER_REPLICATE)
                 mask = cv2.imread((DATA_PATH + 'gt/{}_mask.png').format(id), cv2.IMREAD_GRAYSCALE)
-                #img = img[rand_height:rand_height+input_size, rand_width:rand_width+input_size]
-                mask = cv2.resize(mask, (input_size, input_size))
-                #mask = mask[rand_height:rand_height+input_size, rand_width:rand_width+input_size]
+                mask = cv2.copyMakeBorder(mask, top=0, bottom=0, left=0, right=2, borderType= cv2.BORDER_REPLICATE)
                 mask = np.expand_dims(mask, axis=2)
                 x_batch.append(img)
                 y_batch.append(mask)
@@ -169,7 +157,7 @@ callbacks = [EarlyStopping(monitor='val_loss',
                                verbose=1,
                                epsilon=1e-4),
              ModelCheckpoint(monitor='val_loss',
-                             filepath='weights/best_weights.hdf5',
+                             filepath='weights/best_weights_1280.hdf5',
                              save_best_only=True,
                              save_weights_only=True),
              TensorBoard(log_dir='logs')]

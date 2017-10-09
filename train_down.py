@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 import os
 import random
 
-gpu_id = '0'
+gpu_id = '2'
 os.environ['CUDA_VISIBLE_DEVICES']=str(gpu_id)
 
 import params
@@ -107,16 +107,16 @@ def train_generator():
             ids_train_batch = ids_train_split[start:end]
             for id in ids_train_batch:
                 #rand_height = random.randint(0, orig_height - input_size - 1)
-                #rand_height = 0
-                #rand_width = random.randint(0, orig_width - input_size - 1)
+                rand_height = 640
+                rand_width = random.randint(0, orig_width - input_size - 1)
                 
                 img = cv2.imread((DATA_PATH + 'train/{}.jpg').format(id))
-                #img = img[rand_height:rand_height+input_size, rand_width:rand_width+input_size]
+                img = img[rand_height:rand_height+640, rand_width:rand_width+input_size]
                 img = cv2.resize(img, (input_size, input_size))
 
                 mask = cv2.imread((DATA_PATH + 'gt/{}_mask.png').format(id), cv2.IMREAD_GRAYSCALE)
+                mask = mask[rand_height:rand_height+640, rand_width:rand_width+input_size]
                 mask = cv2.resize(mask, (input_size, input_size))
-                #mask = mask[rand_height:rand_height+input_size, rand_width:rand_width+input_size]
 
                 img = randomHueSaturationValue(img,
                                                hue_shift_limit=(-50, 50),
@@ -144,13 +144,15 @@ def valid_generator():
             ids_valid_batch = ids_valid_split[start:end]
             for id in ids_valid_batch:
                 #rand_height = random.randint(0, orig_height - input_size - 1)
-                #rand_width = random.randint(0, orig_width - input_size - 1)
+                rand_height = 640
+                rand_width = random.randint(0, orig_width - input_size - 1)
                 img = cv2.imread((DATA_PATH + 'train/{}.jpg').format(id))
+                img = img[rand_height:rand_height+640, rand_width:rand_width+input_size]
                 img = cv2.resize(img, (input_size, input_size))
+
                 mask = cv2.imread((DATA_PATH + 'gt/{}_mask.png').format(id), cv2.IMREAD_GRAYSCALE)
-                #img = img[rand_height:rand_height+input_size, rand_width:rand_width+input_size]
+                mask = mask[rand_height:rand_height+640, rand_width:rand_width+input_size]
                 mask = cv2.resize(mask, (input_size, input_size))
-                #mask = mask[rand_height:rand_height+input_size, rand_width:rand_width+input_size]
                 mask = np.expand_dims(mask, axis=2)
                 x_batch.append(img)
                 y_batch.append(mask)
@@ -169,12 +171,12 @@ callbacks = [EarlyStopping(monitor='val_loss',
                                verbose=1,
                                epsilon=1e-4),
              ModelCheckpoint(monitor='val_loss',
-                             filepath='weights/best_weights.hdf5',
+                             filepath='weights/best_weights_down.hdf5',
                              save_best_only=True,
                              save_weights_only=True),
              TensorBoard(log_dir='logs')]
 
-model.load_weights(filepath='weights/best_weights.hdf5')
+model.load_weights(filepath='weights/best_weights_down.hdf5')
 
 model.fit_generator(generator=train_generator(),
                    steps_per_epoch=np.ceil(float(len(ids_train_split)) / float(batch_size)),
